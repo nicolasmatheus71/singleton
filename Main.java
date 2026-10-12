@@ -6,7 +6,7 @@ public class Main {
 
     private static Scanner teclado = new Scanner(System.in);
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         System.out.println(" DEMOSTRACION DEL PATRON SINGLETON ");
         pausar("Presione Enter para empezar...");
 
@@ -17,6 +17,9 @@ public class Main {
         pausar("Presione Enter para el escenario 3...");
 
         escenario3();
+        pausar("Presione Enter para el escenario 4...");
+
+        escenario4();
 
         System.out.println();
         System.out.println("Fin de la demostracion.");
@@ -67,6 +70,48 @@ public class Main {
         System.out.println("Consultas de c2: " + c2.getConsultasEjecutadas());
     }
 
+    // Escenario 4: varios hilos piden la conexion al mismo tiempo.
+    // Todos deben recibir la misma instancia y ninguna consulta se debe perder.
+    private static void escenario4() throws InterruptedException {
+        System.out.println();
+        System.out.println("--- Escenario 4: varios hilos ---");
+
+        int cantidad = 5;
+        int[] identificadores = new int[cantidad];
+        Thread[] hilos = new Thread[cantidad];
+
+        int antes = ConexionBD.getInstance().getConsultasEjecutadas();
+
+        // Cada hilo pide la conexion, guarda el identificador y hace una consulta.
+        for (int i = 0; i < cantidad; i++) {
+            final int numero = i;
+            hilos[i] = new Thread(() -> {
+                ConexionBD conexion = ConexionBD.getInstance();
+                identificadores[numero] = System.identityHashCode(conexion);
+                conexion.ejecutarConsulta("SELECT * FROM hilo" + numero);
+            });
+            hilos[i].start();
+        }
+
+        // Esperamos a que todos terminen antes de mostrar los resultados.
+        for (Thread hilo : hilos) {
+            hilo.join();
+        }
+
+        boolean todosIguales = true;
+        for (int i = 0; i < cantidad; i++) {
+            System.out.println("Hilo " + i + " recibio el identificador: " + identificadores[i]);
+            if (identificadores[i] != identificadores[0]) {
+                todosIguales = false;
+            }
+        }
+
+        int despues = ConexionBD.getInstance().getConsultasEjecutadas();
+        System.out.println("Todos recibieron la misma instancia ? " + todosIguales);
+        System.out.println("Consultas hechas por los hilos: " + (despues - antes));
+    }
+
+    // Muestra un mensaje y espera a que se presione Enter.
     private static void pausar(String mensaje) {
         System.out.println();
         System.out.println(mensaje);
@@ -75,3 +120,4 @@ public class Main {
         }
     }
 }
+

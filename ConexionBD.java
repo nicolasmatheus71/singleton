@@ -5,7 +5,7 @@
 public class ConexionBD {
 
     // Aqui se guarda la unica instancia. Es static porque pertenece a la clase
-    // y no a un objeto. El volatile es para que los hilos vean siempre el valor actualizado.
+    // y no a un objeto. El volatile evita que otro hilo vea la instancia a medio construir.
     private static volatile ConexionBD instance;
 
     // Cuenta cuantas consultas se han ejecutado. Como la conexion es una sola,
@@ -32,12 +32,14 @@ public class ConexionBD {
     }
 
     // Simula ejecutar una consulta SQL.
-    public void ejecutarConsulta(String sql) {
+    // Es synchronized para que no se pierdan consultas si varios hilos usan la conexion.
+    public synchronized void ejecutarConsulta(String sql) {
         consultasEjecutadas++;
         System.out.println("Ejecutando: " + sql);
     }
 
-    public int getConsultasEjecutadas() {
+    public synchronized int getConsultasEjecutadas() {
         return consultasEjecutadas;
     }
 }
+
